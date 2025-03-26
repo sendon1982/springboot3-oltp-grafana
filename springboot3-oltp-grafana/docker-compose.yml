@@ -1,0 +1,80 @@
+version: '3.8'
+services:
+  otel-demo:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    depends_on:
+      - otel-collector
+    environment:
+      OTEL_SERVICE_NAME: "otel-demo"
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+#      OTEL_EXPORTER_OTLP_LOGS_ENDPOINT: http://otel-collector:4318/v1/logs
+#      OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: http://otel-collector:4318/v1/metrics
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+    networks:
+      - otel-network
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.122.1
+    volumes:
+      - ./collector-spring-native-config.yaml:/collector-spring-native-config.yaml
+    command: ["--config=/collector-spring-native-config.yaml"]
+    ports:
+      - "4317:4317"  # Changing OTLP gRPC port for otel-collector
+      - "4318:4318"  # Changing OTLP HTTP port for otel-collector
+      - "8888:8888"  # Debug/Health check
+      - "9464:9464"  # Prometheus exporter
+    networks:
+      - otel-network
+
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    networks:
+      - otel-network
+
+  grafana:
+    container_name: grafana
+    image: grafana/grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana-storage:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    networks:
+      - otel-network
+
+  tempo:
+    image: grafana/tempo:latest
+    command: [ "-config.file=/etc/tempo.yml" ]
+    volumes:
+      - ./tempo.yml:/etc/tempo.yml
+    ports:
+      - "4317"        # OTLP gRPC (Use this ONLY if not using otel-collector)
+      - "4318"        # OTLP HTTP
+      - "3200:3200"   # Tempo UI (Query)
+      - "9095:9095"   # Tempo internal metrics
+    networks:
+      - otel-network
+
+  loki:
+    image: grafana/loki:latest
+    command: -config.file=/etc/loki/local-config.yaml
+    ports:
+      - "3100:3100"
+    networks:
+      - otel-network
+
+networks:
+  otel-network:
+
+volumes:
+  grafana-storage:

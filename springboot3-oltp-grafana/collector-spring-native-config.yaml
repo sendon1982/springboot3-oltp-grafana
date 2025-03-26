@@ -1,0 +1,46 @@
+# Receivers
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317  # Changing OTLP gRPC to 4319 to avoid conflict
+      http:
+        endpoint: 0.0.0.0:4318  # Changing OTLP HTTP to 4320
+
+
+processors:
+  batch:
+
+# Exporters
+exporters:
+  debug:
+    verbosity: detailed
+
+  prometheus:
+    endpoint: "0.0.0.0:9464"
+
+  otlphttp/logs:
+    endpoint: "http://loki:3100/otlp"
+    tls:
+      insecure: true
+
+  otlp:
+    endpoint: "http://tempo:4317"  # Send traces to Tempo on 4317
+    tls:
+      insecure: true
+
+# Pipelines
+service:
+  pipelines:
+    logs:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlphttp/logs, debug]
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlp]
+#    metrics:
+#      receivers: [otlp]
+#      processors: [batch]
+#      exporters: [otlp]
