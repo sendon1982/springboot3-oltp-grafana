@@ -7,26 +7,71 @@ services:
     ports:
       - "8080:8080"
     depends_on:
-      - otel-collector
+      - loki
+      - tempo
     environment:
       OTEL_SERVICE_NAME: "otel-demo"
-      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
-#      OTEL_EXPORTER_OTLP_LOGS_ENDPOINT: http://otel-collector:4318/v1/logs
-#      OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: http://otel-collector:4318/v1/metrics
-      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_TRACES_SAMPLER: always_on
     networks:
       - otel-network
 
-  otel-collector:
-    image: otel/opentelemetry-collector-contrib:0.122.1
-    volumes:
-      - ./collector-spring-native-config.yaml:/collector-spring-native-config.yaml
-    command: ["--config=/collector-spring-native-config.yaml"]
+#
+## For direct OTLP to Loki (requires Loki OTLP receiver enabled)
+  #OTEL_EXPORTER_OTLP_LOGS_ENDPOINT=http://localhost:3100/loki/api/v1/otlp
+  #
+  ## Or if using Grafana Cloud
+  #OTEL_EXPORTER_OTLP_LOGS_ENDPOINT=https://logs-prod-us-central1.grafana.net/loki/api/v1/otlp
+  #
+  ## Other related properties
+  #OTEL_EXPORTER_OTLP_LOGS_PROTOCOL=http/protobuf
+  #OTEL_EXPORTER_OTLP_LOGS_HEADERS=Authorization=Basic%20<base64-encoded-credentials>
+
+# spring config
+# application.properties
+#  logging.config=classpath:logback-spring.xml
+#
+#  # OTLP Exporter Configuration
+#  otel.exporter.otlp.endpoint=http://localhost:4317
+#  otel.exporter.otlp.protocol=grpc
+#  otel.logs.exporter=otlp
+
+########################################################################################################################
+# Use otel-collector if needed
+########################################################################################################################
+#  otel-collector:
+#    image: otel/opentelemetry-collector-contrib:0.122.1
+#    volumes:
+#      - ./collector-spring-native-config.yaml:/collector-spring-native-config.yaml
+#    command: ["--config=/collector-spring-native-config.yaml"]
+#    ports:
+#      - "1888:1888"   # pprof extension
+#      - "8888:8888"   # Prometheus metrics exposed by the collector
+#      - "8889:8889"   # Prometheus exporter metrics
+#      - "13133:13133" # health_check extension
+#      - "4318:4318"   # OTLP HTTP receiver
+#      - "55679:55679" # zpages extension
+#    networks:
+#      - otel-network
+########################################################################################################################
+  loki:
+    image: grafana/loki:latest
+    command: -config.file=/etc/loki/local-config.yaml
     ports:
-      - "4317:4317"  # Changing OTLP gRPC port for otel-collector
-      - "4318:4318"  # Changing OTLP HTTP port for otel-collector
-      - "8888:8888"  # Debug/Health check
-      - "9464:9464"  # Prometheus exporter
+      - "3100:3100"
+    networks:
+      - otel-network
+
+  tempo:
+    image: grafana/tempo:latest
+    command: [ "-config.file=/etc/tempo.yml" ]
+    volumes:
+      - ./tempo.yml:/etc/tempo.yml
+    ports:
+      - "14268" # jaeger ingest
+      - "9411"  # zipkin
+      - "3200:3200"   # Tempo UI
+      - "4317:4317"   # OTLP gRPC
+      - "4318:4318"   # OTLP HTTP
     networks:
       - otel-network
 
@@ -44,32 +89,13 @@ services:
     container_name: grafana
     image: grafana/grafana
     environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_AUTH_DISABLE_LOGIN_FORM=true
     volumes:
       - grafana-storage:/var/lib/grafana
     ports:
       - "3000:3000"
-    networks:
-      - otel-network
-
-  tempo:
-    image: grafana/tempo:latest
-    command: [ "-config.file=/etc/tempo.yml" ]
-    volumes:
-      - ./tempo.yml:/etc/tempo.yml
-    ports:
-      - "4317"        # OTLP gRPC (Use this ONLY if not using otel-collector)
-      - "4318"        # OTLP HTTP
-      - "3200:3200"   # Tempo UI (Query)
-      - "9095:9095"   # Tempo internal metrics
-    networks:
-      - otel-network
-
-  loki:
-    image: grafana/loki:latest
-    command: -config.file=/etc/loki/local-config.yaml
-    ports:
-      - "3100:3100"
     networks:
       - otel-network
 

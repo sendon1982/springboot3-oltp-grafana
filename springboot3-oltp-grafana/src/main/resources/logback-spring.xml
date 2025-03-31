@@ -2,7 +2,7 @@
 <configuration>
     <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <pattern>%d{yyyy-MM-dd HH:mm:ss} [%thread] [%X{trace_id},%X{span_id}] %-5level %logger{100} - %msg%n</pattern>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss} [%thread] [%X{trace_id},%X{span_id}] [%-5level] %logger{100} - %msg%n</pattern>
         </encoder>
     </appender>
     <appender name="OpenTelemetry"

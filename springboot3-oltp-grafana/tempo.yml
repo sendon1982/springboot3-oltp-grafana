@@ -1,6 +1,5 @@
 server:
   http_listen_port: 3200
-  grpc_listen_port: 4317  # Ensure this is set!
 
 distributor:
   receivers:                           # this configuration will listen on all ports and protocols that tempo is capable of.

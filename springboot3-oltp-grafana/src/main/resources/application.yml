@@ -3,7 +3,20 @@ spring:
 application-description: springboot3-oltp-grafana
 application-version: 1.0
 
-# Enable context propagation for RestTemplate
+management:
+  tracing:
+    sampling:
+      probability: 1.0  # 100% sampling (adjust as needed)
+
+otel:
+  exporter:
+    otlp:
+      traces:
+        endpoint: http://localhost:4317
+        protocol: grpc
+
+
+  # Enable context propagation for RestTemplate
 
 
 #management:
@@ -30,14 +43,15 @@ application-version: 1.0
 #management.otlp.metrics.export.url: http://otel-collector:4318/v1/metrics
 #management.otlp.metrics.export.step: 10s
 #management.server.port: 8082
-management.otlp.tracing.endpoint: http://otel-collector:4318/v1/traces
+#management.otlp.tracing.endpoint: http://otel-collector:4318/v1/traces
 #
-## sampling every request
-#management.tracing.sampling.probability: 1.0
-#otel.exporter.otlp.logs.endpoint: http://otel-collector:4318/v1/logs
-#otel.exporter.otlp.endpoint: http://otel-collector:4318
+
+#otel.exporter.otlp:
+#  endpoint: http://tempo:4317
+#  protocol: grpc
 
 # Add env
 #  ENV OTEL_EXPORTER_OTLP_LOGS_ENDPOINT=http://otel-collector:4318/v1/logs
 #  ENV OTEL_EXPORTER_OTLP_METRICS_ENDPOINT=http://otel-collector:4318
+
 #  ENV OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://otel-collector:4318/v1/traces
