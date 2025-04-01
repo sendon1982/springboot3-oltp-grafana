@@ -9,16 +9,16 @@ processors:
   batch:
 
 exporters:
-  logging:
-    loglevel: debug
+  debug:
+    verbosity: detailed
 
-  loki:
-    endpoint: "http://loki:3100/loki/api/v1/push"
+  otlphttp/logs:
+    endpoint: "http://loki:3100/otlp"
+    tls:
+      insecure: true
 
   prometheus:
     endpoint: "0.0.0.0:8889"
-    const_labels:
-      label1: value1
 
   otlp:
     endpoint: tempo:4317
@@ -28,11 +28,11 @@ exporters:
 #  zipkin:
 #    endpoint: "http://zipkin-all-in-one:9411/api/v2/spans"
 #    format: proto
-
-  jaeger:
-    endpoint: jaeger-all-in-one:14250
-    tls:
-      insecure: true
+#
+#  jaeger:
+#    endpoint: jaeger-all-in-one:14250
+#    tls:
+#      insecure: true
 
 # https://github.com/open-telemetry/opentelemetry-collector/blob/main/extension/README.md
 extensions:
@@ -49,11 +49,11 @@ service:
     metrics:
       receivers: [otlp]
       processors: [batch]
-      exporters: [prometheus]
+      exporters: [debug, prometheus]
     traces:
       receivers: [otlp]
       processors: [batch]
-      exporters: [jaeger,otlp]
+      exporters: [debug, otlp]
     logs:
       receivers: [otlp]
-      exporters: [loki]
+      exporters: [debug, otlphttp/logs]

@@ -1,54 +1,39 @@
 spring:
-  application.name: springboot3-oltp-grafana
-application-description: springboot3-oltp-grafana
-application-version: 1.0
+  application:
+    name: springboot3-oltp-grafana
 
 management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  otlp:
+    metrics:
+      export:
+        url: http://localhost:4318/v1/metrics
+        step: 10s
+    tracing:
+      endpoint: http://localhost:4318/v1/traces
   tracing:
     sampling:
-      probability: 1.0  # 100% sampling (adjust as needed)
-
-otel:
-  exporter:
-    otlp:
-      traces:
-        endpoint: http://localhost:4317
-        protocol: grpc
-
-
-  # Enable context propagation for RestTemplate
-
-
-#management:
-#  otlp:
-#    metrics:
-#      export:
-#        url: http://localhost:4318/v1/metrics
-#        step: 10s
-#    tracing:
-#      endpoint: http://localhost:4318/v1/traces
-#      export:
-#        step: 10s # Export interval set to 10 seconds
-#  tracing:
-#    sampling:
-#      probability: 1.0
-  
-  
-  
-#otel.sdk.disabled: false
-#management.endpoints.web.exposure.include: health
-#management.endpoint.prometheus.enabled: true
-#management.endpoint.health.show-details: ALWAYS
-#
-#management.otlp.metrics.export.url: http://otel-collector:4318/v1/metrics
-#management.otlp.metrics.export.step: 10s
-#management.server.port: 8082
-#management.otlp.tracing.endpoint: http://otel-collector:4318/v1/traces
-#
-
-#otel.exporter.otlp:
-#  endpoint: http://tempo:4317
-#  protocol: grpc
+      probability: 1.0
+  metrics:
+    distribution:
+      percentiles:
+        do.sleep.method.timed: 0.99, 0.95, 0.9, 0.7, 0.5
+        http.server.requests: 0.99, 0.95, 0.9, 0.7, 0.5
+      percentiles-histogram:
+        do.sleep.method.timed: true
+        http.server.requests: true
+      minimum-expected-value:
+        do.sleep.method.timed: 100ms
+        http.server.requests: 100ms
+      maximum-expected-value:
+        do.sleep.method.timed: 10s
+        http.server.requests: 10s
+      slo:
+        do.sleep.method.timed: 300ms,500ms,1s,2s
+        http.server.requests: 300ms,500ms,1s,2s
 
 # Add env
 #  ENV OTEL_EXPORTER_OTLP_LOGS_ENDPOINT=http://otel-collector:4318/v1/logs
